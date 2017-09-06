@@ -102,3 +102,30 @@
 }
 
 path, .jtk-endpoint { cursor:pointer; }
+
+.diamond {
+	width: 100px;
+	height: 100px;
+	border: 1px solid #333;
+	border-radius: 3px;
+	transform: rotate(45deg);
+}
+
+.ep2 {
+    position: absolute;
+    top: 5px;
+    bottom: 37%;
+    right: 5px;
+    width: 1em;
+    height: 1em;
+    background-color: orange;
+    cursor: pointer;
+    box-shadow: 0 0 2px black;
+    -webkit-transition: -webkit-box-shadow 0.25s ease-in;
+    -moz-transition: -moz-box-shadow 0.25s ease-in;
+    transition: box-shadow 0.25s ease-in;
+}
+
+.ep2:hover {
+    box-shadow: 0 0 6px black;
+}

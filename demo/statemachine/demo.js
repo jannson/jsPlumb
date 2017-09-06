@@ -36,7 +36,8 @@ jsPlumb.ready(function () {
     // this listener sets the connection's internal
     // id as the label overlay's text.
     instance.bind("connection", function (info) {
-        info.connection.getOverlay("label").setLabel(info.connection.id);
+        //info.connection.getOverlay("label").setLabel(info.connection.id);
+        info.connection.getOverlay("label").setLabel("");
     });
 
     // bind a double click listener to "canvas"; add new node when this occurs.
@@ -54,13 +55,14 @@ jsPlumb.ready(function () {
 
         instance.makeSource(el, {
             filter: ".ep",
-            anchor: "Continuous",
+            //anchor: "Continuous",
+            anchor: "RightMiddle",
             connectorStyle: { stroke: "#5c96bc", strokeWidth: 2, outlineStroke: "transparent", outlineWidth: 4 },
             connectionType:"basic",
             extract:{
                 "action":"the-action"
             },
-            maxConnections: 2,
+            maxConnections: 10,
             onMaxConnections: function (info, e) {
                 alert("Maximum connections (" + info.maxConnections + ") reached");
             }
@@ -69,7 +71,7 @@ jsPlumb.ready(function () {
         instance.makeTarget(el, {
             dropOptions: { hoverClass: "dragHover" },
             anchor: "Continuous",
-            allowLoopback: true
+            allowLoopback: false,
         });
 
         // this is not part of the core demo functionality; it is a means for the Toolkit edition's wrapped
@@ -96,10 +98,21 @@ jsPlumb.ready(function () {
         for (var i = 0; i < windows.length; i++) {
             initNode(windows[i], true);
         }
+        //
+        //instance.addEndpoint("condition-test-id", sourceEndpoint, { anchor:sourceAnchors[i], uuid:sourceUUID});
+
         // and finally, make a few connections
         instance.connect({ source: "opened", target: "phone1", type:"basic" });
-        instance.connect({ source: "phone1", target: "phone1", type:"basic" });
+        //instance.connect({ source: "phone1", target: "phone1", type:"basic" });
         instance.connect({ source: "phone1", target: "inperson", type:"basic" });
+        instance.connect({ source: "condition-test-id", target: "rejected", type:"basic",
+
+        anchors: [
+            [ "Perimeter", { shape: "Triangle", rotation: 90 }],
+            [ "Perimeter", { shape: "Triangle", rotation: 0 }]
+        ]
+
+        });
 
         instance.connect({
             source:"phone2",
