@@ -162,3 +162,7 @@ path, .jtk-endpoint { cursor:pointer; }
     border-radius: 0;
     transform: rotate(45deg);
 }
+
+* {
+    box-sizing: border-box;
+}
