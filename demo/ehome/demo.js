@@ -116,20 +116,10 @@ jsPlumb.ready(function () {
 
     instance.initNode = initNode;
     instance.newNode = newNode;
-    var flow = new flowGraph();
+    var flow = new flowGraph("canvas");
 
     // suspend drawing and initialise.
     instance.batch(function () {
-        for (var i = 0; i < windows.length; i++) {
-            initNode(windows[i], true);
-        }
-        // and finally, make a few connections
-        instance.connect({source: "opened", target: "phone1", type: "basic"});
-        instance.connect({source: "phone1", target: "inperson", type: "basic"});
-        instance.connect({source: "phone1", target: "phone2", type: "basic"});
-        instance.connect({source: "inperson", target: "rejected", type: "basic"});
-        instance.connect({source: "phone2", target: "rejected", type: "basic"});
-
         flow.paint();
     });
 

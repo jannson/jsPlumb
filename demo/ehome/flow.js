@@ -7,30 +7,77 @@
         createHtml:function() {
             this.createHtmlImpl.apply(this, arguments);
         },
-        layout:function() {
-            this.layoutImpl.apply(this, arguments);
+        layout:function(ctx, x, y, end) {
+            //this.layoutImpl.apply(this, arguments);
+            var self = this;
+            self.x = x + VGAP;
+            self.y = y - self.getHeight()/2;
+            $('#'+self.id).css("left", self.x);
+            $('#'+self.id).css("top", self.y);
+
+            var x0 = self.x + self.getWidth();
+            var y0 = y;
+            if(self.link_to.length == 0) {
+                return;
+            } else if(self.link_to.length == 1) {
+                var nid = self.link_to[0];
+                if(nid == end) {
+                    return;
+                }
+                var node = ctx.map[nid];
+                node.layout(ctx, x0, y0, end);
+            } else {
+                var near = ctx.nears[self.id];
+                var y1 = y - self.boxHeight/2;
+                for(var i = 0; i < self.link_to.length; i++) {
+                    var node = ctx.map[self.link_to[i]];
+                    node.layout(ctx, x0, y1, near);
+                    y1 += node.getHeight() + HGAP;
+                }
+            }
         },
         getHeight:function() {
-            this.getHeightImpl.apply(this, arguments);
+            return this.getHeightImpl.apply(this, arguments);
         },
         getWidth:function() {
-            this.getWidthImpl.apply(this, arguments);
+            return this.getWidthImpl.apply(this, arguments);
         },
-        calcSize:function(ctx) {
+        calcSize:function(ctx, end) {
+            //calc box size from self to end
             var self = this;
             var width = 0;
-            var heigh = 0;
-            for(var i = 0; i < self.link_to.length; i++) {
-                var node = ctx.map[self.link_to[i]];
-                node.calcSize(ctx);
-                if (width < node.boxWidth) {
-                    width = node.boxWidth;
-                }
-                heigh += node.boxHeight + HGAP;
-            }
+            var height = 0;
 
-            self.boxWidth = width + self.getWidth() + 2*VGAP;
-            self.boxHeight = height - HGAP;
+            if(self.link_to.length == 0) {
+                self.boxWidth = self.getWidth();
+                self.boxHeight = self.getHeight();
+            } else if(self.link_to.length == 1) {
+                var nid = self.link_to[0];
+                if (nid == end) {
+                    self.boxWidth = self.getWidth();
+                    self.boxHeight = self.getHeight();
+                    return;
+                }
+
+                var node = ctx.map[nid];
+                node.calcSize(ctx, end);
+                self.boxWidth = node.boxWidth + self.getWidth() + 2*VGAP;
+                self.boxHeight = node.boxHeight;
+            } else {
+                var near = ctx.nears[self.id];
+                for(var i = 0; i < self.link_to.length; i++) {
+                    var node = ctx.map[self.link_to[i]];
+                    node.calcSize(ctx, near);
+                    if (width < node.boxWidth) {
+                        //choose the max width
+                        width = node.boxWidth;
+                    }
+                    height += node.boxHeight + HGAP;
+                }
+
+                self.boxWidth = width + self.getWidth() + 2*VGAP;
+                self.boxHeight = height + HGAP;
+            }
         },
         connect:function(val) {
             //
@@ -193,7 +240,7 @@
             jsp.newNode(self.id, self.flowType, self.label);
         };
 
-        self.layoutImpl = function() {
+        self.layoutImpl = function(ctx, end) {
 
         };
 
@@ -287,8 +334,9 @@
     jQuery.extend(endNode.prototype, interfaceNode);
     jQuery.extend(normalNode.prototype, interfaceNode);
 
-    var flowGraph = function() {
+    var flowGraph = function(container) {
         var self = this;
+        self.container = container;
         var data = getData();
         var map = data2map(data);
         self.map = {};
@@ -328,10 +376,28 @@
             var ctx = {"graph":self, "idStart":"id_start", "idEnd":"id_end", "map":self.map, "nears":{}};
             calcNearNodes(ctx);
 
-            start.calcSize(ctx);
-            start.layout(ctx);
-            console.log("start.boxWidth", start.boxWitdh, "startBoxHeight", start.boxHeight);
+            start.calcSize(ctx, ctx.idEnd);
 
+            //var end = self.map["id_D2"];
+            //end.calcSize(ctx);
+            //var start = end;
+
+            console.log("start.boxWidth", start.boxWidth, "startBoxHeight", start.boxHeight);
+
+            var defw = 1300;
+            var defh = 600;
+            if (start.boxWidth > defw) {
+                defw = start.boxWidth;
+            }
+            if (start.boxHeight > defh) {
+                defh = start.boxHeight;
+            }
+            $('#'+self.container).css("width", defw);
+            $('#'+self.container).css("height", defh);
+
+            var x0 = 0;
+            var y0 = defh/2;
+            start.layout(ctx, x0, y0, ctx.idEnd);
         }
     };
 
