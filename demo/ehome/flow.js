@@ -1,7 +1,8 @@
 ;(function(){
 
-    var HGAP = 10;
-    var VGAP = 20;
+    var HGAP = 20;
+    var VGAP = 30;
+    var VGAP2 = 20;
 
     var interfaceNode = {
         createHtml:function() {
@@ -12,6 +13,9 @@
             var self = this;
             self.x = x + VGAP;
             self.y = y - self.getHeight()/2;
+            if(self.flowType == "CONDITION") {
+                self.x += VGAP2;
+            }
             $('#'+self.id).css("left", self.x);
             $('#'+self.id).css("top", self.y);
 
@@ -22,18 +26,29 @@
             } else if(self.link_to.length == 1) {
                 var nid = self.link_to[0];
                 if(nid == end) {
+                    //the self is the end
                     return;
                 }
                 var node = ctx.map[nid];
                 node.layout(ctx, x0, y0, end);
             } else {
                 var near = ctx.nears[self.id];
-                var y1 = y - self.boxHeight/2;
+                var y1 = y - self.boxHeight/4;
+                var nearWidth = 0;
                 for(var i = 0; i < self.link_to.length; i++) {
                     var node = ctx.map[self.link_to[i]];
                     node.layout(ctx, x0, y1, near);
                     y1 += node.getHeight() + HGAP;
+                    if(nearWidth < node.boxWidth) {
+                        nearWidth = node.boxWidth;
+                    }
                 }
+                if (near == end) {
+                    return;
+                }
+                var node = ctx.map[near];
+                x0 += nearWidth + VGAP;
+                node.layout(ctx, x0, y0, end);
             }
         },
         getHeight:function() {
@@ -42,7 +57,7 @@
         getWidth:function() {
             return this.getWidthImpl.apply(this, arguments);
         },
-        calcSize:function(ctx, end) {
+        calcBoxSize:function(ctx, end) {
             //calc box size from self to end
             var self = this;
             var width = 0;
@@ -51,32 +66,43 @@
             if(self.link_to.length == 0) {
                 self.boxWidth = self.getWidth();
                 self.boxHeight = self.getHeight();
+                return;
             } else if(self.link_to.length == 1) {
                 var nid = self.link_to[0];
-                if (nid == end) {
+                if(nid == end) {
+                    //the next is the end
                     self.boxWidth = self.getWidth();
                     self.boxHeight = self.getHeight();
                     return;
                 }
 
+                //calc the next box size
                 var node = ctx.map[nid];
-                node.calcSize(ctx, end);
-                self.boxWidth = node.boxWidth + self.getWidth() + 2*VGAP;
+                node.calcBoxSize(ctx, end);
+                self.boxWidth = node.boxWidth + self.getWidth() + VGAP;
                 self.boxHeight = node.boxHeight;
             } else {
                 var near = ctx.nears[self.id];
                 for(var i = 0; i < self.link_to.length; i++) {
                     var node = ctx.map[self.link_to[i]];
-                    node.calcSize(ctx, near);
+                    node.calcBoxSize(ctx, near);
                     if (width < node.boxWidth) {
                         //choose the max width
                         width = node.boxWidth;
                     }
                     height += node.boxHeight + HGAP;
                 }
+                height -= HGAP;
 
-                self.boxWidth = width + self.getWidth() + 2*VGAP;
-                self.boxHeight = height + HGAP;
+                //near to end
+                var node = ctx.map[near];
+                node.calcBoxSize(ctx, end);
+                if(node.boxHeight > height) {
+                    height = node.boxHeight;
+                }
+
+                self.boxWidth = node.boxWidth + width + self.getWidth() + VGAP2 + 2*VGAP;
+                self.boxHeight = height;
             }
         },
         connect:function(val) {
@@ -128,6 +154,35 @@
             ["id_A5", "id_D2"],
 
             ["id_D2", "id_end"]
+        ]
+        return data;
+    };
+
+    var getData2 = function() {
+        var data = {}
+        data.objs = [
+            {"id":"id_start", "label":"开始", "flowType":"START"},
+
+            {"id":"id_A1", "label":"A1", "flowType":"NORMAL"},
+            {"id":"id_C1", "label":"C1", "flowType":"CONDITION"},
+            {"id":"id_A31", "label":"A31", "flowType":"NORMAL"},
+            {"id":"id_A32", "label":"A32", "flowType":"NORMAL"},
+            {"id":"id_A41", "label":"A41", "flowType":"NORMAL"},
+            {"id":"id_D1", "label":"D1", "flowType":"NORMAL"},
+            {"id":"id_A5", "label":"A5", "flowType":"NORMAL"},
+
+            {"id":"id_end", "label":"结束", "flowType":"END"}
+        ];
+        data.links = [
+            ["id_start", "id_A1"],
+            ["id_A1", "id_C1"],
+            ["id_C1", "id_A31"],
+            ["id_C1", "id_A41"],
+            ["id_A31", "id_A32"],
+            ["id_A32", "id_D1"],
+            ["id_A41", "id_D1"],
+            ["id_D1", "id_A5"],
+            ["id_A5", "id_end"]
         ]
         return data;
     };
@@ -245,11 +300,11 @@
         };
 
         self.getHeightImpl = function() {
-            return 150;
+            return 100;
         };
 
         self.getWidthImpl = function() {
-            return 150;
+            return 120;
         };
     };
 
@@ -376,10 +431,10 @@
             var ctx = {"graph":self, "idStart":"id_start", "idEnd":"id_end", "map":self.map, "nears":{}};
             calcNearNodes(ctx);
 
-            start.calcSize(ctx, ctx.idEnd);
+            start.calcBoxSize(ctx, ctx.idEnd);
 
             //var end = self.map["id_D2"];
-            //end.calcSize(ctx);
+            //end.calcBoxSize(ctx);
             //var start = end;
 
             console.log("start.boxWidth", start.boxWidth, "startBoxHeight", start.boxHeight);
@@ -398,6 +453,10 @@
             var x0 = 0;
             var y0 = defh/2;
             start.layout(ctx, x0, y0, ctx.idEnd);
+
+            var end = self.map["id_end"];
+            $('#'+end.id).css("left", start.x + start.boxWidth + VGAP);
+            $('#'+end.id).css("top", start.y);
         }
     };
 
