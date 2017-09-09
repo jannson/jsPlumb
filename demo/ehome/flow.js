@@ -106,8 +106,15 @@
                 self.boxHeight = height;
             }
         },
-        connect:function(val) {
-            //
+        connect:function(ctx) {
+            jsp = window.jsp;
+            var self = this;
+            for(var i = 0; i < self.link_to.length; i++) {
+                var nid = self.link_to[i];
+                jsp.connect({source: self.id, target:nid, type: "basic"});
+                var node = ctx.map[nid];
+                node.connect(ctx);
+            }
         }
     };
 
@@ -296,10 +303,6 @@
             jsp.newNode(self.id, self.flowType, self.label);
         };
 
-        self.layoutImpl = function(ctx, end) {
-
-        };
-
         self.getHeightImpl = function() {
             return 100;
         };
@@ -318,10 +321,6 @@
         self.createHtmlImpl = function() {
             jsp = window.jsp;
             jsp.newNode(self.id, self.flowType, self.label);
-        };
-
-        self.layoutImpl = function() {
-
         };
 
         self.getHeightImpl = function() {
@@ -344,10 +343,6 @@
             jsp.newNode(self.id, self.flowType, self.label);
         };
 
-        self.layoutImpl = function() {
-
-        };
-
         self.getHeightImpl = function() {
             return 60;
         };
@@ -366,10 +361,6 @@
         self.createHtmlImpl = function() {
             jsp = window.jsp;
             jsp.newNode(self.id, self.flowType, self.label);
-        };
-
-        self.layoutImpl = function() {
-
         };
 
         self.getHeightImpl = function() {
@@ -400,7 +391,7 @@
             self.map[k] = self.createHtml(map[k]);
         }
 
-        console.log("graph created");
+        //console.log("graph created");
     };
 
     flowGraph.prototype = {
@@ -438,7 +429,7 @@
             //end.calcBoxSize(ctx);
             //var start = end;
 
-            console.log("start.boxWidth", start.boxWidth, "startBoxHeight", start.boxHeight);
+            //console.log("start.boxWidth", start.boxWidth, "startBoxHeight", start.boxHeight);
 
             var defw = 1300;
             var defh = 600;
@@ -458,6 +449,9 @@
             var end = self.map["id_end"];
             $('#'+end.id).css("left", start.x + start.boxWidth + VGAP);
             $('#'+end.id).css("top", start.y);
+
+            //connect all points
+            start.connect(ctx);
         }
     };
 
