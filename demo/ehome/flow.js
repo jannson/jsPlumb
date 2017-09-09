@@ -33,12 +33,13 @@
                 node.layout(ctx, x0, y0, end);
             } else {
                 var near = ctx.nears[self.id];
-                var y1 = y - self.boxHeight/4;
+                var y1 = y - self.boxHeight/2;
                 var nearWidth = 0;
                 for(var i = 0; i < self.link_to.length; i++) {
                     var node = ctx.map[self.link_to[i]];
+                    y1 += node.boxHeight/2;
                     node.layout(ctx, x0, y1, near);
-                    y1 += node.getHeight() + HGAP;
+                    y1 += node.boxHeight/2 + HGAP;
                     if(nearWidth < node.boxWidth) {
                         nearWidth = node.boxWidth;
                     }
