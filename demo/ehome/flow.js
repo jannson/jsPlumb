@@ -118,7 +118,7 @@
         }
     };
 
-    var getData = function() {
+    var getData1 = function() {
         var data = {}
         data.objs = [
             {"id":"id_start", "label":"开始", "flowType":"START"},
@@ -166,7 +166,7 @@
         return data;
     };
 
-    var getData2 = function() {
+    var getData = function() {
         var data = {}
         data.objs = [
             {"id":"id_start", "label":"开始", "flowType":"START"},
@@ -190,6 +190,10 @@
             ["id_A32", "id_D1"],
             ["id_A41", "id_D1"],
             ["id_D1", "id_A5"],
+
+            //["id_D1", "id_A32"],
+            ["id_A5", "id_A31"],
+
             ["id_A5", "id_end"]
         ]
         return data;
@@ -381,6 +385,67 @@
     jQuery.extend(endNode.prototype, interfaceNode);
     jQuery.extend(normalNode.prototype, interfaceNode);
 
+    var dfsVisit = function(ctx, nodeId) {
+        var map = ctx.map;
+        var link_to = ctx.link_to;
+        var visit = ctx.visit
+        var father = ctx.father;
+        var node = map[nodeId];
+
+        visit[nodeId] = 1;
+        for (var i = 0; i < map[nodeId].link_to.length; i++) {
+            var k = map[nodeId].link_to[i];
+            if(nodeId != k) {
+                if(visit[k] == 1 && nodeId != father[k]) {
+                    //深度搜索，如果从一个节点出发深层搜索，又遇到自己连接上自己的父节点，则有环路
+                    //detch loop
+                    var tmp = nodeId;
+                    var cycle = '';
+                    while(tmp != k) {
+                        cycle = cycle + ' ' + tmp +  '->';
+                        tmp = father[tmp];
+                    }
+                    cycle = cycle + ' ' + tmp;
+                    console.log("loop detech", cycle);
+                    ctx.loop = true;
+                } else if(visit[k] == 0) {
+                    father[k] = nodeId;
+                    dfsVisit(ctx, k);
+                }
+            }
+        }
+
+        visit[nodeId] = 2;
+    };
+
+    var dfs = function(map) {
+        var visit = {};     // visit states
+        var father = {};    // the nodes link to current node
+        var link_to = {};
+        for(var k in map) {
+            visit[k] = 0;
+            father[k] = -1;
+            var node = map[k];
+            for(var i = 0; i < node.link_to.length; i++) {
+                link_to[k+'$'+node.link_to[i]] = 1;
+            }
+        }
+
+        var ctx = {};
+        ctx.map = map;
+        ctx.visit = visit;
+        ctx.father = father;
+        ctx.link_to = link_to;
+        ctx.loop = false;
+        for(var k in map) {
+            if(visit[k] == 0) {
+                dfsVisit(ctx, k);
+            }
+        }
+
+        return ctx.loop;
+    };
+
     var flowGraph = function(container) {
         var self = this;
         self.container = container;
@@ -395,6 +460,10 @@
     };
 
     flowGraph.prototype = {
+        loopDetach:function() {
+            var self = this;
+            return dfs(self.map);
+        },
         createHtml:function(obj) {
             var dom;
             if (obj["flowType"] == "CONDITION") {
@@ -418,6 +487,12 @@
         },
         paint:function() {
             var self = this;
+
+            if(self.loopDetach()) {
+                console.log("loopDetach");
+                return;
+            }
+
             var start = self.map["id_start"];
 
             var ctx = {"graph":self, "idStart":"id_start", "idEnd":"id_end", "map":self.map, "nears":{}};
@@ -429,12 +504,13 @@
             //end.calcBoxSize(ctx);
             //var start = end;
 
-            //console.log("start.boxWidth", start.boxWidth, "startBoxHeight", start.boxHeight);
+            console.log("start.boxWidth", start.boxWidth, "startBoxHeight", start.boxHeight);
 
             var defw = 1300;
             var defh = 600;
-            if (start.boxWidth > defw) {
-                defw = start.boxWidth;
+            var boxw = start.boxWidth + 200;
+            if (boxw > defw) {
+                defw = boxw;
             }
             if (start.boxHeight > defh) {
                 defh = start.boxHeight;
