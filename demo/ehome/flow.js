@@ -118,7 +118,7 @@
         }
     };
 
-    var getData1 = function() {
+    var getData = function() {
         var data = {}
         data.objs = [
             {"id":"id_start", "label":"开始", "flowType":"START"},
@@ -161,12 +161,15 @@
             ["id_D1", "id_A5"],
             ["id_A5", "id_D2"],
 
+            //loop
+            //["id_A43", "id_A2"],
+
             ["id_D2", "id_end"]
         ]
         return data;
     };
 
-    var getData = function() {
+    var getData2 = function() {
         var data = {}
         data.objs = [
             {"id":"id_start", "label":"开始", "flowType":"START"},
@@ -191,8 +194,9 @@
             ["id_A41", "id_D1"],
             ["id_D1", "id_A5"],
 
+            //loop
             //["id_D1", "id_A32"],
-            ["id_A5", "id_A31"],
+            //["id_A5", "id_A31"],
 
             ["id_A5", "id_end"]
         ]
