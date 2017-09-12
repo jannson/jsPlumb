@@ -32,6 +32,7 @@
                 var node = ctx.map[nid];
                 node.layout(ctx, x0, y0, end);
             } else {
+                //multiple direction
                 var near = ctx.nears[self.id];
                 var y1 = y - self.boxHeight/2;
                 var nearWidth = 0;
@@ -83,6 +84,7 @@
                 self.boxWidth = node.boxWidth + self.getWidth() + VGAP;
                 self.boxHeight = node.boxHeight;
             } else {
+                //multiple direction
                 var near = ctx.nears[self.id];
                 for(var i = 0; i < self.link_to.length; i++) {
                     var node = ctx.map[self.link_to[i]];
@@ -107,7 +109,7 @@
             }
         },
         connect:function(ctx) {
-            jsp = window.jsp;
+            var jsp = window.jsp;
             var self = this;
             for(var i = 0; i < self.link_to.length; i++) {
                 var nid = self.link_to[i];
@@ -307,7 +309,7 @@
         }
 
         self.createHtmlImpl = function() {
-            jsp = window.jsp;
+            var jsp = window.jsp;
             jsp.newNode(self.id, self.flowType, self.label);
         };
 
@@ -327,7 +329,7 @@
         }
 
         self.createHtmlImpl = function() {
-            jsp = window.jsp;
+            var jsp = window.jsp;
             jsp.newNode(self.id, self.flowType, self.label);
         };
 
@@ -347,7 +349,7 @@
         }
 
         self.createHtmlImpl = function() {
-            jsp = window.jsp;
+            var jsp = window.jsp;
             jsp.newNode(self.id, self.flowType, self.label);
         };
 
@@ -367,7 +369,7 @@
         }
 
         self.createHtmlImpl = function() {
-            jsp = window.jsp;
+            var jsp = window.jsp;
             jsp.newNode(self.id, self.flowType, self.label);
         };
 
@@ -404,14 +406,13 @@
                     //深度搜索，如果从一个节点出发深层搜索，又遇到自己连接上自己的父节点，则有环路
                     //detch loop
                     var tmp = nodeId;
-                    var cycle = '';
+                    var arr = [];
                     while(tmp != k) {
-                        cycle = cycle + ' ' + tmp +  '->';
+                        arr.push(tmp);
                         tmp = father[tmp];
                     }
-                    cycle = cycle + ' ' + tmp;
-                    console.log("loop detech", cycle);
-                    ctx.loop = true;
+                    arr.push(k);
+                    ctx.loops.push(arr);
                 } else if(visit[k] == 0) {
                     father[k] = nodeId;
                     dfsVisit(ctx, k);
@@ -440,18 +441,19 @@
         ctx.visit = visit;
         ctx.father = father;
         ctx.link_to = link_to;
-        ctx.loop = false;
+        ctx.loops = [];
         for(var k in map) {
             if(visit[k] == 0) {
                 dfsVisit(ctx, k);
             }
         }
 
-        return ctx.loop;
+        return ctx.loops;
     };
 
     var flowGraph = function(container) {
         var self = this;
+        self.ignoreEvent = true;
         self.container = container;
         var data = getData();
         var map = data2map(data);
@@ -464,6 +466,41 @@
     };
 
     flowGraph.prototype = {
+        findNormalErrors:function(){
+            var errIds = [];
+            var self = this;
+            for(var k in self.map) {
+                var obj = self.map[k];
+                if(obj.flowType == "CONDITION") {
+                    if(obj.link_to.length <= 1) {
+                        errIds.push(obj.id);
+                    } else if(obj.link_from.length == 0) {
+                        errIds.push(obj.id);
+                    }
+                } else if(obj.flowType == "END") {
+                    if(obj.link_to.length != 0) {
+                        errIds.push(obj.id);
+                    } else if(obj.link_from.length == 0) {
+                        errIds.push(obj.id);
+                    }
+                } else if(obj.flowType == "NORMAL") {
+                    if(obj.link_to.length != 1) {
+                        errIds.push(obj.id);
+                    } else if(obj.link_from.length == 0) {
+                        errIds.push(obj.id);
+                    }
+                } else {
+                    //START
+                    if(obj.link_to.length != 1) {
+                        errIds.push(obj.id);
+                    } else if(obj.link_from.length != 0) {
+                        errIds.push(obj.id);
+                    }
+                }
+            }
+
+            return errIds;
+        },
         loopDetach:function() {
             var self = this;
             return dfs(self.map);
@@ -491,10 +528,37 @@
         },
         paint:function() {
             var self = this;
+            var jsp = window.jsp;
 
-            if(self.loopDetach()) {
-                console.log("loopDetach");
+            var errIds = self.findNormalErrors();
+            if (errIds.length > 0) {
+                self.ignoreEvent = false;
+
+                //mark as red
+                for(var i = 0; i < errIds.length; i++) {
+                    var id = errIds[i];
+                    $("#"+id).addClass("error");
+                }
                 return;
+            }
+
+            var loops = self.loopDetach();
+            if(loops.length > 0) {
+                self.ignoreEvent = false;
+
+                //mark as red
+                for(var i = 0; i < loops.length; i++) {
+                    var arr = loops[i];
+                    for (var j = 0; j < arr.length; j++) {
+                        var id = arr[j];
+                        $("#"+id).addClass("error");
+                    }
+                }
+                return;
+            }
+
+            for(var k in self.map) {
+                $("#"+k).removeClass("error");
             }
 
             var start = self.map["id_start"];
@@ -532,6 +596,73 @@
 
             //connect all points
             start.connect(ctx);
+
+            self.ignoreEvent = false;
+        },
+        evtNewNode:function(id, typ) {
+            var self = this;
+            if (self.ignoreEvent) {
+                return;
+            }
+            self.map[id] = self.createHtml({"flowType":typ, "id":id, "label":typ, "link_to":[], "link_from":[]});
+        },
+        evtNewConnection:function(sourceId, targetId) {
+            var self = this;
+            if (self.ignoreEvent) {
+                return;
+            }
+
+            var e1 = self.map[sourceId];
+            var e2 = self.map[targetId];
+            var find = false;
+            for(var i = 0; i < e1.link_to.length; i++) {
+                if(e1.link_to[i] == targetId) {
+                    find = true;
+                    break;
+                }
+            }
+            if(!find) {
+                e1.link_to.push(targetId);
+            }
+            find = false;
+            for(var i = 0; i < e2.link_from.length; i++) {
+                if(e2.link_from[i] == sourceId) {
+                    find = true;
+                    break;
+                }
+            }
+            if(!find) {
+                e2.link_from.push(sourceId);
+            }
+
+        },
+        evtDeleteConnection:function(sourceId, targetId) {
+            var self = this;
+            if (self.ignoreEvent) {
+                return;
+            }
+
+            var e1 = self.map[sourceId];
+            var e2 = self.map[targetId];
+
+            var removeValue = function(arr, v) {
+                var n = [];
+                for(var i = 0; i < arr.length; i++) {
+                    var a = arr[i];
+                    if(a != v) {
+                        n.push(a);
+                    }
+                }
+
+                if(n.length == arr.length) {
+                    return arr;
+                }
+
+                return n;
+            };
+
+            e1.link_to = removeValue(e1.link_to, targetId);
+            e2.link_from = removeValue(e2.link_from, sourceId);
         }
     };
 

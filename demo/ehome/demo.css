@@ -35,8 +35,8 @@
 }
 
 .diamond .ep {
-    top: 8px;
-    right: 8px;
+    top: 9px;
+    right: 9px;
 }
 
 .diamond .text {
@@ -165,4 +165,9 @@ path, .jtk-endpoint { cursor:pointer; }
 
 * {
     box-sizing: border-box;
+}
+
+.error, .error:hover {
+    color: red;
+    border-color:red;
 }

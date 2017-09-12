@@ -3,6 +3,7 @@ jsPlumb.ready(function () {
     var instance = jsPlumb.getInstance({
         EndpointStyle: {radius: 6, fill: "#7AB02C"},
         Connector: "StateMachine",
+        //Connector: "Bezier",
         HoverPaintStyle: {stroke: "#1e8151", strokeWidth: 2},
         ConnectionOverlays: [
             ["Arrow", {
@@ -26,34 +27,6 @@ jsPlumb.ready(function () {
 
     var canvas = document.getElementById("canvas");
     var windows = jsPlumb.getSelector(".statemachine-demo .w");
-
-    // bind a click listener to each connection; the connection is deleted. you could of course
-    // just do this: jsPlumb.bind("click", jsPlumb.detach), but I wanted to make it clear what was
-    // happening.
-    instance.bind("click", function (c) {
-        instance.deleteConnection(c);
-    });
-
-    // bind a connection listener. note that the parameter passed to this function contains more than
-    // just the new connection - see the documentation for a full list of what is included in 'info'.
-    // this listener sets the connection's internal
-    // id as the label overlay's text.
-    instance.bind("connection", function (info) {
-        // info.connection.getOverlay("label").setLabel(info.connection.id);
-    });
-
-    // bind a double click listener to "canvas"; add new node when this occurs.
-    // jsPlumb.on(canvas, "dblclick", function(e) {
-    //     newNode(e.offsetX, e.offsetY);
-    // });
-
-    document.getElementById("addTask").onclick = function () {
-        newNode(jsPlumbUtil.uuid(), 'default', 'NORMAL');
-    }
-
-    document.getElementById("addSwitch").onclick = function () {
-        newNode(jsPlumbUtil.uuid(), 'default', 'CONDITION');
-    }
 
     //
     // initialise element as connection targets and source.
@@ -117,6 +90,44 @@ jsPlumb.ready(function () {
     instance.initNode = initNode;
     instance.newNode = newNode;
     var flow = new flowGraph("canvas");
+
+    // bind a click listener to each connection; the connection is deleted. you could of course
+    // just do this: jsPlumb.bind("click", jsPlumb.detach), but I wanted to make it clear what was
+    // happening.
+    instance.bind("click", function (info) {
+        //sourceId, targetId
+        instance.deleteConnection(info);
+    });
+
+    // bind a connection listener. note that the parameter passed to this function contains more than
+    // just the new connection - see the documentation for a full list of what is included in 'info'.
+    // this listener sets the connection's internal
+    // id as the label overlay's text.
+    instance.bind("connection", function (info) {
+        //console.log(info, 'connection')
+        flow.evtNewConnection(info.sourceId, info.targetId);
+    });
+
+    instance.bind("connectionDetached", function (info) {
+        //console.log(info, 'connectionDetached');
+        flow.evtDeleteConnection(info.sourceId, info.targetId);
+    });
+
+    document.getElementById("addTask").onclick = function () {
+        //newNode(jsPlumbUtil.uuid(), 'NORMAL', 'NORMAL');
+        flow.evtNewNode('id'+jsPlumbUtil.uuid(), 'NORMAL');
+    };
+
+    document.getElementById("addSwitch").onclick = function () {
+        //newNode(jsPlumbUtil.uuid(), 'CONDITION', 'CONDITION');
+        flow.evtNewNode('id'+jsPlumbUtil.uuid(), 'CONDITION');
+    };
+
+    $('#id_auto_adj').click(function() {
+        console.log("new paint");
+        flow.paint();
+        instance.repaintEverything();
+    });
 
     // suspend drawing and initialise.
     instance.batch(function () {
